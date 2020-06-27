@@ -93,6 +93,40 @@
 2. 阻塞状态是什么
     - 一般而言,把Blocked,Waiting,Timed_Waiting都成为阻塞状态,不仅仅是Blocked
 ### 五.Thread和Object类中的重要方法详解
+1. 方法概览![线程重要方法](src/main/resources/课程资料/技术图片/线程重要方法.png)
+2. wait(),notify(),notifyAll()
+    - 用法分三个阶段:
+        - 阻塞阶段:线程调用了wait就进入阻塞阶段,调用wait的前提是获得了monitor锁,直到遇到以下四种情况之一,才可能被唤醒  
+        ①另一个线程调用这个对象的notify()方法而且刚好被唤醒的是本线程  
+        ②另一个线程调用这个对象的notifyAll()方法  
+        ③过了wait(long timeout)规定的超时时间,如果传入0就是永久等待  
+        ④线程自身调用了interrupt()中断
+        - 唤醒阶段:notify()是唤醒随机的线程,JVM不参与选取,notifyAll()是唤醒全部等待的线程
+        - 遇到中断:进入wait()的线程,如果遇到中断,会抛出interruptException,并释放monitor锁
+3. 代码示例
+    - 展示wait和notify的基本用法 1. 研究代码执行顺序 2. 证明wait释放锁[Wait.java](src/main/java/com/lyming/threadcoreknowledge/threadobjectclasscommonmethods/Wait.java)
+    - notify, notifyAll。 start先执行不代表线程先启动。[WaitNotifyAll](src/main/java/com/lyming/threadcoreknowledge/threadobjectclasscommonmethods/WaitNotifyAll.java)
+    - wait只释放当前的那把锁[WaitNotifyReleaseOwnMonitor.java](src/main/java/com/lyming/threadcoreknowledge/threadobjectclasscommonmethods/WaitNotifyReleaseOwnMonitor.java)
+    - wait(),notify(),notifyAll()的特点性质
+        - 属于Object类,用之前必须拥有monitor,另外notify()只能唤醒其中一个
+        - 这些方法都是native final
+        - 类似功能有Condition
+    - 手写生产者消费者设计模式
+        - 什么是生产者消费者模式![生产者模式1](src/main/resources/课程资料/技术图片/生产者模式1.png)![生产者模式2](src/main/resources/课程资料/技术图片/生产者模式2.png)
+        - 用wait/notify来实现生产者消费者模式[ProducerConsumerModel.java](src/main/java/com/lyming/threadcoreknowledge/threadobjectclasscommonmethods/ProducerConsumerModel.java)
+    - 两个线程交替打印0~100的奇偶数[用synchronized关键字实现](src/main/java/com/lyming/threadcoreknowledge/threadobjectclasscommonmethods/WaitNotifyPrintOddEvenSyn.java),[用wait和notify实现,效率更高](src/main/java/com/lyming/threadcoreknowledge/threadobjectclasscommonmethods/WaitNotifyPrintOddEveWait.java)
+    - wait()和notify()必须要在同步代码块中,有锁来保护,以免切换不受控制,会让锁
+    - wait()属于Object类,那调用Thread.wait会怎么样?线程不适合作为锁,因为它会自动调用notify()方法
+    - sleep():不释放锁(包括Synchronized和lock),[不释放synchronized的monitor](src/main/java/com/lyming/threadcoreknowledge/threadobjectclasscommonmethods/SleepDontReleaseMonitor.java),[不释放lock](src/main/java/com/lyming/threadcoreknowledge/threadobjectclasscommonmethods/SleepDontReleaseLock.java)
+        - sleep()也能相应中断,和wait()相似,抛出InterruptedException,并清除中断状态[SleepInterrupted.java](src/main/java/com/lyming/threadcoreknowledge/threadobjectclasscommonmethods/SleepInterrupted.java)
+    - join():谁用,别的线程都要等他
+        - 普通用法==>[Join.java](src/main/java/com/lyming/threadcoreknowledge/threadobjectclasscommonmethods/Join.java)
+        - 遇到中断==>[JoinInterrupt.java](src/main/java/com/lyming/threadcoreknowledge/threadobjectclasscommonmethods/JoinInterrupt.java)
+        - join期间,线程所在的状态时Waiting==>[JoinThreadState.java](src/main/java/com/lyming/threadcoreknowledge/threadobjectclasscommonmethods/JoinThreadState.java)
+        - 看源码可以看到,join主要就是用了wait()方法,但是没有看到notify,这也和上面介绍wait()方法时,不推荐用线程来做锁,因为在底层有一个`ensure_join`方法,调用了notifyAll()方法,线程在执行完毕会自动调用
+        - 等待代码==>[JoinPrinciple.java](src/main/java/com/lyming/threadcoreknowledge/threadobjectclasscommonmethods/JoinPrinciple.java)
+    - yield():释放CPU时间片,但是状态依然是Runnable,因为不会释放锁,也不会阻塞
+        - 定位:JVM不保证遵循,也就是说即使调用了它,马上又被cpu调用(一般是CPU资源充足)
 ### 六.线程的各个属性
 ### 七.未捕获异常如何处理
 ### 八.双刃剑:多线程会导致的问题
