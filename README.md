@@ -128,6 +128,101 @@
     - yield():释放CPU时间片,但是状态依然是Runnable,因为不会释放锁,也不会阻塞
         - 定位:JVM不保证遵循,也就是说即使调用了它,马上又被cpu调用(一般是CPU资源充足)
 ### 六.线程的各个属性
+1. 线程各个属性总览
+    - ![线程各属性总结](src/main/resources/课程资料/技术图片/线程各属性总结.png)
+    - ![线程各属性概览](src/main/resources/课程资料/技术图片/线程各属性概览.png)
+2. 线程id
+    - [ID从1开始，JVM运行起来后，我们自己创建的线程的ID早已不是2](src/main/java/com/lyming/threadcoreknowledge/threadobjectclasscommonmethods/Id.java)
+    ```java
+     /* For generating thread ID ,默认值是0*/
+        private static long threadSeqNumber;
+        /* ++在前面,所以id从1开始 */
+        private static synchronized long nextThreadID() {
+            return ++threadSeqNumber;
+        }
+    ```
+    - 自己创建的线程为什么不是2?因为JVM在后台为了程序运行的准备工作还创建了很多线程
+3. 线程名字
+    - 默认线程名字的源码
+    ```java
+      public Thread() {
+          init(null, null, "Thread-" + nextThreadNum(), 0);
+      }
+    ```
+    - 修改线程的名字
+    ```java
+   /* Java thread status for tools,
+    * initialized to indicate thread 'not yet started'
+    */
+   /* 线程还没有启动的时候 */
+   private volatile int threadStatus = 0;
+   
+    public final synchronized void setName(String name) {
+        checkAccess();
+        if (name == null) {
+            throw new NullPointerException("name cannot be null");
+        }
+        /* Thread有两个名字,一个是name,一个是NativeName,后者一旦线程
+           启动就无法更改 */
+        this.name = name;
+        if (threadStatus != 0) {
+            setNativeName(name);
+        }
+    }
+    ``` 
+4. 守护线程
+    - 作用:给用户线程提供服务,JVM停止(一般是代码执行完毕),守护线程停止(发现用户线程都停止了,没守护对象了)
+    - 线程类型默认继承自父线程,即守护线程创建的线程都是守护线程,用户线程创建的线程都是用户线程,有一个修改守护属性的方法叫`setDeamon()`
+    - 通常而言,守护线程都是由JVM自动启动,而不是用户去启动,JVM启动的时候有一个非守护线程==>main()函数
+    - 守护线程不影响JVM退出,JVM想退出只看还有没有用户线程运行
+    - 守护线程和用户线程基本相同,主要区别就是是否影响JVM退出,用户线程一般是做业务逻辑的,守护线程是服务于用户线程的
+    - 是否需要手动将用户线程设置为守护线程?==>不应该,有风险,如果该线程涉及到业务逻辑的处理,可能会因为JVM退出,处理中断
+5. 线程优先级
+    - 10个级别,默认5,而且子线程默认也是5
+    ``` 
+        /**
+         * 最低的优先级.
+         */
+        public final static int MIN_PRIORITY = 1;
+    
+       /**
+         * 默认的优先级
+         */
+        public final static int NORM_PRIORITY = 5;
+    
+        /**
+         * 最大的优先级
+         */
+        public final static int MAX_PRIORITY = 10;
+    ```
+    - 程序设计不应该依赖优先级
+        - 不同操作系统优先级不一样,优先级高度依赖操作系统,比如java有10个优先级,windows只有7个优先级,所以需要映射,所以优先级不可靠
+        - 优先级会被操作系统改变,比如在windows中有个优先级推进器,会根据哪个线程努力给它分配资源,而不是靠优先级,而且如果设置的优先级过低,可能会造成饥饿
 ### 七.未捕获异常如何处理
+- UncaughtExceptionHandler类,未捕获异常处理器
+    - 为什么需要它?==>①主线程可以轻松发现异常,子线程却不行.[多线程，子线程发生异常](src/main/java/com/lyming/threadcoreknowledge/uncaughtexception/ExceptionInChildThread.java),因为主线程发生异常,程序停止,子线程异常,虽然可以打印出异常信息,但是很不容易发现②子线程异常无法用传统方法捕获,[线程的异常不能用传统方法捕获](src/main/java/com/lyming/threadcoreknowledge/uncaughtexception/CantCatchDirectly.java)
+    - [自己的MyUncaughtExceptionHanlder](src/main/java/com/lyming/threadcoreknowledge/uncaughtexception/MyUncaughtExceptionHandler.java),[UseOwnUncaughtExceptionHandler.java](src/main/java/com/lyming/threadcoreknowledge/uncaughtexception/UseOwnUncaughtExceptionHandler.java)
+    - 异常处理器的调用策略ThreadGroup.uncaughtException
+    ``` 
+        public void uncaughtException(Thread t, Throwable e) {
+            //默认情况下parent=null
+            if (parent != null) {
+                parent.uncaughtException(t, e);
+            } else {
+                /* 调用Thread.setDefaultUncaughtExceptionHandler(...)
+                方法设置的全局Handler进行处理 */
+                Thread.UncaughtExceptionHandler ueh =
+                    Thread.getDefaultUncaughtExceptionHandler();
+                if (ueh != null) {
+                    ueh.uncaughtException(t, e);
+                } else if (!(e instanceof ThreadDeath)) {
+                    //全局Handler也不存在就输出异常栈
+                    System.err.print("Exception in thread \""
+                                     + t.getName() + "\" ");
+                    e.printStackTrace(System.err);
+                }
+            }
+        }
+    ```
 ### 八.双刃剑:多线程会导致的问题
 ## 常见面试问题
