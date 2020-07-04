@@ -241,3 +241,56 @@
                     3. 构造函数中运行线程,[MultiThreadsError6.java](src/main/java/com/lyming/background/MultiThreadsError6.java)
 ----
 ## java内存模型(JMM)
+### 什么是底层原理
+1. 从java代码到cpu指令
+    1. 程序员编写.java文件的Java代码
+    2. 经过编译(javac命令)后,*.java文件会生成一个新的java字节码文件(*.class)
+    3. JVM会执行刚才生成的字节码文件,并把字节码文件转化为机器指令
+    4. 机器指令可以直接在CPU上执行,也就是最终的程序运行
+2. JVM实现会带来不同的翻译,不同CPU平台的机器指令又千差万别,无法保证并发安全的效果一致
+### 三兄弟:JVM内存结构 java内存模型 java对象模型
+- JVM内存结构:和Java虚拟机的运行时区域有关
+- Java内存模型,和Java的并发编程有关
+- Java对象模型,和Java对象在虚拟机中的表现形式有关
+### JMM是什么
+- Java Memory Model是一组规范,需要各个JVM的实现来遵守JMM规范,以便于开发者可以利用这些规范,更方便开发并发程序,如果没有JMM内存模型规范,那么很可能经过不同的JVM的不同规则的重排序之后,导致不同虚拟机的运行结果不同
+- volatile,Synchronized,Lock等底层原理都是JMM
+### 重排序
+- 重排序的例子:[OutOfOrderExecution.java](src/main/java/com/lyming/jmm/OutOfOrderExecution.java)
+- 重排序的好处:提高处理速度
+- 重排序的3种情况:编译器优化(包括JVM,JIT编译器),CPU指令重排序,内存的"重排序"==>线程A的修改,没及时写回主存,所以线程B却看不到,引出可见性问题,表面现象重排序
+### 可见性
+1. 什么是可见性问题,[演示可见性带来的问题](src/main/java/com/lyming/jmm/FieldVisibility.java)
+    - 可能出现b=3,a=1
+    - 加入volatile关键字,解决可见性问题,强制读取的值是最新的值
+2. 为什么会出现可见性
+    - Java作为高级语言,屏蔽了这些底层细节,用JMM定义了一套读写内存数据的规范,虽然我们不再需要关心一级缓存和二级缓存的问题,但是,JMM抽象了主内存和本地内存的概念
+    - 这里说的本地内存并不是真的给一块每个线程分配的内存,而是JMM的一个抽象,是对于寄存器,一级缓存,二级缓存等的抽象
+3. JMM的抽象:主内存和本地内存
+    - JMM有以下的规定:
+        1. 所有的变量都存储在主内存中,同时每个线程也有自己独立的工作内存,工作内存中的变量内容是主内存中的拷贝
+        2. 线程不能直接读写主内存中的变量,而是只能操作自己工作内存中的变量,然后再同步到主内存中
+        3. 主内存是多个线程共享的,但线程间不共享工作内存,如果线程间需要通信,必须借助主内存中转来完成
+    - 所有的共享变量存在于主内存中,每个线程都有自己的本地内存,而且线程读写共享数据也是通过本地内存交换的,所有才导致了可见性问题
+4. Happens-Before原则
+    - 有哪些规则
+        1. 单线程原则:不影响重排序
+        2. 锁操作(Synchronized和Lock):加锁之后,对加锁之前的所有操作都可见
+        3. volatile变量:一旦加了volatile修饰,一定能保证可见性
+        4. 线程启动:子线程启动能看到主线程之前的操作
+        5. 线程join:比如在主线程,子线程用了join(),就是要主线程等待,也防止了重排序
+        6. 传递性:同一个线程中,如果hb(A,B),而且hb(B,C),那么可以推出hb(A,C)
+        7. 中断:一个线程被其他线程interrupt时,那么检测中断(isInterruptd())或者抛出InterruptedException一定能看到
+        8. 构造方法:对象构造方法的最后一行指令happens-before于finalize()方法的第一行指令
+        9. 工具类的Happens-Before原则
+            1. 线程安全的容器(比如ConcurrentHashMap)get一定能看到在此之前的put等存入动作
+            2. CountDownLatch
+            3. Semaphore
+            4. Future
+            5. 线程池
+            6. CyclicBarrier
+5. volatile关键字:[演示可见性带来的问题](src/main/java/com/lyming/jmm/FieldVisibility.java)
+    - 有一个原则:近朱者赤==>给b加了volatile,不仅b被影响,也可以实现轻量级同步,就是说b之前的写入(对应代码b=a)对读取b后的代码都可见,所以在writeThread里对a的赋值,一定会对writeThread里的读取可见,所以这里的a`即使不加volatile,只要b读到是3,就可以由happens-before原则保证了读取到的都是3而不可能读取到1`.
+6. 保证可见性的措施
+7. 对Synchronized可见性的理解
+### 原子性
