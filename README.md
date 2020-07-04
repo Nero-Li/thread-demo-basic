@@ -225,4 +225,19 @@
         }
     ```
 ### 八.双刃剑:多线程会导致的问题
-## 常见面试问题
+- 线程安全问题
+    - 什么是线程安全?==>当多个线程访问一个对象时,如果不用考虑这些线程在运行时环境下的调度和交替执行,也不需要进行额外的同步,或者在调用方进行任何其他的协调操作,调用这个对象的行为都可以获得正确的结果,那这个对象时线程安全的
+    - 线程不安全:get同时set就不安全,但是可以做额外同步做到线程同步
+    - 什么情况下会出现线程安全问题:第一个主要是数据争用(比如多个线程同时去写),第二个竞争条件,指的是执行顺序上的错误
+        - 运行结果错误:a++多线程下出现消失的请求现象![线程安全问题](src/main/resources/课程资料/技术图片/线程安全问题.jpg),[MultiThreadsError.java](src/main/java/com/lyming/background/MultiThreadsError.java)
+        - 活跃性问题:死锁,活锁,饥饿[MultiThreadError.java](src/main/java/com/lyming/background/MultiThreadError.java)
+        - 对象发布和初始化的安全问题
+            - 什么是发布:脱离了本类的调用
+            - 什么是溢出(发布到了不该发布的地方)
+                1. 方法返回一个private对象(private本意是不让外部访问),[发布溢出](src/main/java/com/lyming/background/MultiThreadsError3.java)
+                2. 还未完成初始化(构造函数还没有完全执行完毕),就把对象提供给外部
+                    1. 在构造函数中未初始化完毕就this赋值,[MultiThreadsError4.java](src/main/java/com/lyming/background/MultiThreadsError4.java)
+                    2. 隐式溢出----注册监听事件,[观察者模式](src/main/java/com/lyming/background/MultiThreadsError5.java),修复==>[MultiThreadsError7.java](src/main/java/com/lyming/background/MultiThreadsError7.java)
+                    3. 构造函数中运行线程,[MultiThreadsError6.java](src/main/java/com/lyming/background/MultiThreadsError6.java)
+----
+## java内存模型(JMM)
