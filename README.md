@@ -310,3 +310,37 @@
     - synchronized不仅保证了原子性,还保证了可见性
     - synchronized不仅让被保护的代码安全,还近朱者赤
 ### 原子性
+1. 什么是原子性
+    - 一系列的操作,要么全部执行成功,要么全部不执行,不会出现执行一半的情况,是不可分割的.
+    - ATM机取钱
+    - i++不是原子性的
+    - 用synchronized实现原子性
+2. Java中的原子性操作有哪些
+    - 除long和double之外的基本类型的赋值操作(int,byte,boolean,short,char,float)
+    - 所有引用reference的赋值操作,不管是32位的机器还是64位的机器
+    - java.concurrent.Atomic.*包中所有类的原子操作
+3. long和double的原子性
+    - 问题描述:官方文档,对于64位的值的写入,可以分为两个32位的操作进行写入,读取错误,使用volatile解决
+    - 结论:在32位的JVM上,long和double的操作不是原子的,但是64位的JVM上是原子的
+    - 实际开发中:商用Java虚拟机中不会出现
+4. 原子操作+原子操作!=原子操作
+    - 简单的把原子操作组合在一起,并不能保证整体依然具有原子性
+### 面试常见问题
+1. JMM应用实例:单例模式的8种写法,单例和并发的关系
+    - 单例模式的作用:①节约内存和计算②保证结果正确③方便管理
+    - 单例模式的8种写法(可用代表线程安全)
+        1. 饿汉式（静态常量）（可用）[Singleton1](src\main\java\com\lyming\singleton\Singleton1.java)
+        2. 饿汉式（静态代码块）（可用））[Singleton2](src\main\java\com\lyming\singleton\Singleton2.java)
+        3. 懒汉式（线程不安全）[Singleton3](src\main\java\com\lyming\singleton\Singleton3.java)
+        4. 懒汉式（线程安全）（不推荐）[Singleton4](src\main\java\com\lyming\singleton\Singleton4.java)
+        5. 懒汉式（线程不安全）（不推荐）[Singleton5](src\main\java\com\lyming\singleton\Singleton5.java)
+        6. 双重检查（推荐面试使用）[Singleton6](src\main\java\com\lyming\singleton\Singleton6.java)
+        7. 静态内部类方式，可用 [Singleton7](src\main\java\com\lyming\singleton\Singleton7.java)
+        6. 枚举单例(推荐用) [Singleton8](src\main\java\com\lyming\singleton\Singleton8.java)
+    - 不同写法对比
+        1. 饿汉:简单,但是没有lazy loading,如果对象的创建需要配置文件就不适用
+        2. 懒汉:有线程安全问题
+        3. 静态内部类:可用,但是静态内部类会引入编程复杂性
+        4. 双重检查模式:面试用
+        5. 枚举类:最好,开发环境推荐
+    - `effective Java`中提出:使用枚举类实现单例模式已经成为Singleton的最佳方法,线程安全有保障,反编译之后枚举类实际就是静态的对象,也是懒加载,而且还有一个优势就是枚举能避免反序列化(反射)破坏单例
