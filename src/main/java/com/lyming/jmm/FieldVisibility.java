@@ -9,7 +9,6 @@ package com.lyming.jmm;
 public class FieldVisibility {
     int a = 1;
     int b = 2;
-//    volatile int a = 1;
 //    volatile int b = 2;
 
     private void change() {

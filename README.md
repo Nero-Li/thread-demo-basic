@@ -291,6 +291,22 @@
             6. CyclicBarrier
 5. volatile关键字:[演示可见性带来的问题](src/main/java/com/lyming/jmm/FieldVisibility.java)
     - 有一个原则:近朱者赤==>给b加了volatile,不仅b被影响,也可以实现轻量级同步,就是说b之前的写入(对应代码b=a)对读取b后的代码都可见,所以在writeThread里对a的赋值,一定会对writeThread里的读取可见,所以这里的a`即使不加volatile,只要b读到是3,就可以由happens-before原则保证了读取到的都是3而不可能读取到1`.
+    - volatile是一种同步机制,比synchronized或者Lock相关类更轻量,因为使用volatile并不会发生上下文切换等开销很大的行为
+    - 如果一个变量被修饰成volatile,那么JVM就知道了这个变量可能会被并发修改
+    - 如果开销小,相应的能力也小,虽然说volatile是用来同步的保证线程安全的,但是volatile做不到synchronized那样的原子保护,volatile仅在很有限的场景下才能发挥作用
+    - volatile的适用场景
+        - 不适用的场景:`a++`,[NoVolatile.java](src\main\java\com\lyming\jmm\NoVolatile.java)
+        - 适用的场景1:boolean flag,如果一个共享变量自始至终只被各个线程赋值,而没有其他的操作,那么就可以用volatile来代替synchronized或者代替原子变量,因为赋值自身是有原子性的,而volatile又保证了可见性,所以就足以保证线程安全.[UseVolatile1.java](src\main\java\com\lyming\jmm\UseVolatile1.java),但是不能依赖之前的赋值,否则也是不安全的[NoVolatile2.java](src\main\java\com\lyming\jmm\NoVolatile2.java)
+        - 适用的场景2:作为刷新之前变量的触发器,[b设置为volatile,作为触发器](src/main/java/com/lyming/jmm/FieldVisibility.java)
+    - volatile的两点作用:
+        - 可见性:读一个volatile变量之前,需要先使相应的本地缓存失效,这样就必须在主内存中读取到新值,写一个volatile属性会立即刷新到主内存
+        - 禁止指令重排序优化:解决单例双重锁乱序问题
+    - volatile和synchronized的关系
+        - volatile在这方面可以看做是轻量版的synchronized:如果一个共享变量自始至终只被各个线程赋值,而没有其他的操作,那么就可以用volatile来代替synchronized或者代替原子变量,因为赋值自身是有原子性的,而volatile又保证了可见性,所以就满足线程安全.
+        - 用volatile修正重排序问题,OutOfOrderExecution.java加入volatile后,用于不会出现(0,0)的情况
 6. 保证可见性的措施
+    - 除了volatile可以让变量保证可见性之外,synchronized,Lock,并发集合,Thread.join(),Thread.start()等都可以保证可见性,参考`happens-before`
 7. 对Synchronized可见性的理解
+    - synchronized不仅保证了原子性,还保证了可见性
+    - synchronized不仅让被保护的代码安全,还近朱者赤
 ### 原子性
